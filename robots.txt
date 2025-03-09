@@ -1,0 +1,9 @@
+# Allow all web crawlers
+User-agent: *
+Allow: /
+
+# Disallow admin area
+Disallow: /admin
+
+# Sitemap location
+Sitemap: https://yourwebsite.com/sitemap.xml
