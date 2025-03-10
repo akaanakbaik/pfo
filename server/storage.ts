@@ -1,260 +1,443 @@
 import { 
-  ProfileType, 
-  ProjectType, 
-  FriendType, 
-  AdminType, 
-  ContactMessageType, 
-  InsertContactMessageType 
+  visitors, admins, analytics, websiteSettings, personalInfo, socialLinks, projects, skills,
+  type Visitor, type InsertVisitor, type Admin, type InsertAdmin, type Analytics, type InsertAnalytics, 
+  type WebsiteSettings, type InsertWebsiteSettings, type PersonalInfo, type InsertPersonalInfo,
+  type SocialLink, type InsertSocialLink, type Project, type InsertProject, type Skill, type InsertSkill,
+  type LoginCredentials 
 } from "@shared/schema";
-import { hashPassword } from "./utils";
+import * as bcrypt from 'bcryptjs';
 
 export interface IStorage {
-  // Admin functions
-  getAdmin(id: number): Promise<AdminType | undefined>;
-  getAdminByUsername(username: string): Promise<AdminType | undefined>;
-  createAdmin(username: string, password: string): Promise<AdminType>;
-  
-  // Stats functions
-  incrementVisitorCount(): Promise<void>;
+  // Visitor methods
   getVisitorCount(): Promise<number>;
-  resetVisitorCount(): Promise<void>;
+  incrementVisitorCount(): Promise<number>;
   
-  // Profile functions
-  getProfile(): Promise<ProfileType | null>;
-  updateProfile(profileData: Partial<ProfileType>): Promise<ProfileType>;
+  // Admin methods
+  createAdmin(data: InsertAdmin): Promise<Admin>;
+  getAdminByUsername(username: string): Promise<Admin | null>;
+  validateAdmin(credentials: LoginCredentials): Promise<Admin | null>;
   
-  // Projects functions
-  getProjects(): Promise<ProjectType[]>;
-  updateProjects(projects: ProjectType[]): Promise<void>;
+  // Analytics methods
+  recordPageView(pageView: string): Promise<Analytics>;
+  getPageViews(): Promise<Analytics[]>;
+  getTopPageViews(limit: number): Promise<Analytics[]>;
+
+  // Website Settings methods
+  getWebsiteSettings(): Promise<WebsiteSettings>;
+  updateWebsiteSettings(data: Partial<InsertWebsiteSettings>): Promise<WebsiteSettings>;
   
-  // Friends/network functions
-  getFriends(): Promise<FriendType[]>;
-  updateFriends(friends: FriendType[]): Promise<void>;
+  // Personal Info methods
+  getPersonalInfo(): Promise<PersonalInfo>;
+  updatePersonalInfo(data: Partial<InsertPersonalInfo>): Promise<PersonalInfo>;
   
-  // Contact functions
-  saveContactMessage(message: InsertContactMessageType): Promise<ContactMessageType>;
-  getContactMessages(): Promise<ContactMessageType[]>;
+  // Social Links methods
+  getSocialLinks(): Promise<SocialLink[]>;
+  getSocialLinkById(id: number): Promise<SocialLink | null>;
+  createSocialLink(data: InsertSocialLink): Promise<SocialLink>;
+  updateSocialLink(id: number, data: Partial<InsertSocialLink>): Promise<SocialLink | null>;
+  deleteSocialLink(id: number): Promise<boolean>;
+  
+  // Projects methods
+  getProjects(): Promise<Project[]>;
+  getProjectById(id: number): Promise<Project | null>;
+  createProject(data: InsertProject): Promise<Project>;
+  updateProject(id: number, data: Partial<InsertProject>): Promise<Project | null>;
+  deleteProject(id: number): Promise<boolean>;
+  getFeaturedProjects(): Promise<Project[]>;
+  
+  // Skills methods
+  getSkills(): Promise<Skill[]>;
+  getSkillsByCategory(category: string): Promise<Skill[]>;
+  getSkillById(id: number): Promise<Skill | null>;
+  createSkill(data: InsertSkill): Promise<Skill>;
+  updateSkill(id: number, data: Partial<InsertSkill>): Promise<Skill | null>;
+  deleteSkill(id: number): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
-  private admins: Map<number, AdminType>;
-  private visitorCount: number;
-  private profile: ProfileType | null;
-  private projects: ProjectType[];
-  private friends: FriendType[];
-  private contactMessages: ContactMessageType[];
-  private currentAdminId: number;
-  private currentMessageId: number;
+  private visitorCount: number = 0;
+  private admins: Admin[] = [];
+  private analytics: Analytics[] = [];
+  private websiteSettings: WebsiteSettings;
+  private personalInfo: PersonalInfo;
+  private socialLinks: SocialLink[] = [];
+  private projects: Project[] = [];
+  private skills: Skill[] = [];
+  
+  private nextAdminId: number = 1;
+  private nextAnalyticsId: number = 1;
+  private nextSocialLinkId: number = 1;
+  private nextProjectId: number = 1;
+  private nextSkillId: number = 1;
 
   constructor() {
-    this.admins = new Map();
-    this.visitorCount = 0;
-    this.profile = null;
-    this.projects = [];
-    this.friends = [];
-    this.contactMessages = [];
-    this.currentAdminId = 1;
-    this.currentMessageId = 1;
-    
-    // Initialize with default admin account
-    this.initializeDefault();
-  }
-
-  private async initializeDefault() {
-    // Add default admin
-    await this.createAdmin("admin", "admin123");
-    
-    // Add default profile
-    this.profile = {
-      id: 1,
-      name: "John Doe",
-      title: "Creative Developer & Designer",
-      email: "contact@example.com",
-      phone: "+1 (234) 567-890",
-      location: "New York, NY, USA",
-      tagline: "Welcome to my portfolio",
-      description: "I craft stunning digital experiences with modern technologies, focusing on clean design and powerful functionality.",
-      aboutText: "I am a passionate web developer with over 5 years of experience creating beautiful, functional, and user-friendly websites. I specialize in front-end development and UI/UX design, with a strong focus on creating seamless user experiences.",
-      approachText: "My approach combines technical expertise with creative design principles to deliver websites that not only look amazing but also perform exceptionally well. I'm constantly exploring new technologies and design trends to stay at the cutting edge of web development.",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=774&q=80",
-      workspaceImage: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1172&q=80",
-      skills: [
-        "HTML5 & CSS3",
-        "JavaScript",
-        "React.js",
-        "UI/UX Design",
-        "GSAP",
-        "Tailwind CSS"
-      ],
-      socials: [
-        { name: "Twitter", url: "#", icon: "fab fa-twitter" },
-        { name: "LinkedIn", url: "#", icon: "fab fa-linkedin-in" },
-        { name: "GitHub", url: "#", icon: "fab fa-github" },
-        { name: "Instagram", url: "#", icon: "fab fa-instagram" },
-        { name: "Dribbble", url: "#", icon: "fab fa-dribbble" }
-      ]
+    // Create default admin user - using non-hashed password directly in constructor
+    // Using direct method for constructor to ensure password is consistent
+    const adminCredentials = {
+      id: this.nextAdminId++,
+      username: 'akaanakbaik',
+      password: '$2a$10$xRBp5BgXZ9V.K9U.c9SFAOEjv4XlKUTpGCbL5NJZEcFxiQJJPE7fO', // pre-hashed 'akaanakbaik17!'
+      createdAt: new Date()
     };
     
-    // Add default projects
-    this.projects = [
-      {
-        id: 1,
-        title: "E-commerce Platform",
-        description: "A full-featured e-commerce solution with custom animations and seamless checkout experience.",
-        image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1015&q=80",
-        category: "Web App",
-        technologies: ["React", "Node.js", "GSAP"],
-        githubUrl: "https://github.com",
-        liveUrl: "https://example.com"
-      },
-      {
-        id: 2,
-        title: "Portfolio Website",
-        description: "A premium portfolio website with advanced animations and interactive elements.",
-        image: "https://images.unsplash.com/photo-1555774698-0b77e0d5fac6?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80",
-        category: "UI Design",
-        technologies: ["HTML5", "CSS3", "JavaScript"],
-        githubUrl: "https://github.com",
-        liveUrl: "https://example.com"
-      },
-      {
-        id: 3,
-        title: "Task Management App",
-        description: "A productivity application with clean UI and smooth transitions between screens.",
-        image: "https://images.unsplash.com/photo-1551651653-c5dcb914d809?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1074&q=80",
-        category: "Mobile App",
-        technologies: ["React Native", "Firebase", "Framer Motion"],
-        githubUrl: "https://github.com",
-        liveUrl: "https://example.com"
-      }
-    ];
+    this.admins.push(adminCredentials);
     
-    // Add default friends
-    this.friends = [
-      {
-        id: 1,
-        name: "Alex Johnson",
-        title: "UX Designer",
-        avatar: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=687&q=80",
-        website: "https://example.com"
-      },
-      {
-        id: 2,
-        name: "Sarah Miller",
-        title: "Web Developer",
-        avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=687&q=80",
-        website: "https://example.com"
-      },
-      {
-        id: 3,
-        name: "James Wilson",
-        title: "Product Manager",
-        avatar: "https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=687&q=80",
-        website: "https://example.com"
-      },
-      {
-        id: 4,
-        name: "Emily Chen",
-        title: "UI Designer",
-        avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=761&q=80",
-        website: "https://example.com"
-      },
-      {
-        id: 5,
-        name: "David Park",
-        title: "Full-stack Developer",
-        avatar: "https://images.unsplash.com/photo-1607990281513-2c110a25bd8c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=734&q=80",
-        website: "https://example.com"
-      }
-    ];
+    // Initialize website settings with default values
+    this.websiteSettings = {
+      id: 1,
+      siteName: "Aka's Portfolio",
+      siteDescription: "Professional Portfolio for Aka - Junior Developer from Indonesia",
+      siteKeywords: "developer, portfolio, indonesia, javascript, react",
+      logoUrl: "",
+      faviconUrl: "",
+      primaryColor: "#0f172a", // Navy
+      accentColor: "#a48111", // Gold
+      fontPrimary: "Playfair Display",
+      fontSecondary: "Poppins",
+      showMusicPlayer: true,
+      musicUrl: "https://cdn.xtermai.xyz/FYDux.mp3",
+      enableAnimation: true,
+      animationIntensity: "medium",
+      updatedAt: new Date()
+    };
+    
+    // Initialize personal info with default values
+    this.personalInfo = {
+      id: 1,
+      name: "Aka",
+      title: "Junior Developer",
+      bio: "15-year-old junior developer from West Sumatra, Indonesia",
+      location: "West Sumatra, Indonesia",
+      email: "aka@example.com",
+      phone: "+62 123 4567 890",
+      avatarUrl: "",
+      resumeUrl: "",
+      updatedAt: new Date()
+    };
+    
+    // Add demo social links
+    this.createSocialLink({
+      platform: "GitHub",
+      url: "https://github.com/aka",
+      icon: "fab fa-github",
+      displayOrder: 1
+    });
+    
+    this.createSocialLink({
+      platform: "LinkedIn",
+      url: "https://linkedin.com/in/aka",
+      icon: "fab fa-linkedin",
+      displayOrder: 2
+    });
+    
+    // Add demo projects
+    this.createProject({
+      title: "Personal Portfolio",
+      description: "A professional portfolio website showcasing my skills and projects.",
+      thumbnailUrl: "",
+      projectUrl: "",
+      githubUrl: "https://github.com/aka/portfolio",
+      technologies: "React, TypeScript, Tailwind CSS",
+      featured: true,
+      displayOrder: 1
+    });
+    
+    // Add demo skills
+    this.createSkill({
+      name: "HTML/CSS",
+      category: "frontend",
+      proficiency: 90,
+      icon: "fab fa-html5",
+      displayOrder: 1
+    });
+    
+    this.createSkill({
+      name: "JavaScript",
+      category: "frontend",
+      proficiency: 85,
+      icon: "fab fa-js",
+      displayOrder: 2
+    });
+    
+    this.createSkill({
+      name: "React",
+      category: "frontend",
+      proficiency: 80,
+      icon: "fab fa-react",
+      displayOrder: 3
+    });
   }
 
-  // Admin functions
-  async getAdmin(id: number): Promise<AdminType | undefined> {
-    return this.admins.get(id);
-  }
-
-  async getAdminByUsername(username: string): Promise<AdminType | undefined> {
-    // Convert Map.values() iterator to array to avoid TypeScript errors
-    const admins = Array.from(this.admins.values());
-    return admins.find(admin => admin.username === username);
-  }
-
-  async createAdmin(username: string, password: string): Promise<AdminType> {
-    const hashedPassword = await hashPassword(password);
-    const id = this.currentAdminId++;
-    const admin: AdminType = { id, username, password: hashedPassword };
-    this.admins.set(id, admin);
-    return admin;
-  }
-
-  // Stats functions
-  async incrementVisitorCount(): Promise<void> {
-    this.visitorCount += 1;
-  }
-
+  // Visitor methods
   async getVisitorCount(): Promise<number> {
     return this.visitorCount;
   }
 
-  async resetVisitorCount(): Promise<void> {
-    this.visitorCount = 0;
+  async incrementVisitorCount(): Promise<number> {
+    this.visitorCount += 1;
+    return this.visitorCount;
   }
-
-  // Profile functions
-  async getProfile(): Promise<ProfileType | null> {
-    return this.profile;
-  }
-
-  async updateProfile(profileData: Partial<ProfileType>): Promise<ProfileType> {
-    if (!this.profile) {
-      throw new Error("Profile not initialized");
+  
+  // Admin methods
+  async createAdmin(data: InsertAdmin): Promise<Admin> {
+    // Check if admin already exists
+    const existingAdmin = await this.getAdminByUsername(data.username);
+    if (existingAdmin) {
+      throw new Error('Admin with this username already exists');
     }
     
-    this.profile = { ...this.profile, ...profileData };
-    return this.profile;
-  }
-
-  // Projects functions
-  async getProjects(): Promise<ProjectType[]> {
-    return this.projects;
-  }
-
-  async updateProjects(projects: ProjectType[]): Promise<void> {
-    this.projects = projects.map((project, index) => ({
-      ...project,
-      id: index + 1,
-    }));
-  }
-
-  // Friends/network functions
-  async getFriends(): Promise<FriendType[]> {
-    return this.friends;
-  }
-
-  async updateFriends(friends: FriendType[]): Promise<void> {
-    this.friends = friends.map((friend, index) => ({
-      ...friend,
-      id: index + 1,
-    }));
-  }
-
-  // Contact functions
-  async saveContactMessage(message: InsertContactMessageType): Promise<ContactMessageType> {
-    const id = this.currentMessageId++;
-    const newMessage: ContactMessageType = {
-      id,
-      ...message,
-      createdAt: new Date(),
-      read: false,
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(data.password, salt);
+    
+    const admin: Admin = {
+      id: this.nextAdminId++,
+      username: data.username,
+      password: hashedPassword,
+      createdAt: new Date()
     };
     
-    this.contactMessages.push(newMessage);
-    return newMessage;
+    this.admins.push(admin);
+    return { ...admin, password: '[HIDDEN]' } as Admin;
   }
-
-  async getContactMessages(): Promise<ContactMessageType[]> {
-    return this.contactMessages;
+  
+  async getAdminByUsername(username: string): Promise<Admin | null> {
+    const admin = this.admins.find(a => a.username === username);
+    return admin || null;
+  }
+  
+  async validateAdmin(credentials: LoginCredentials): Promise<Admin | null> {
+    const admin = await this.getAdminByUsername(credentials.username);
+    
+    if (!admin) {
+      return null;
+    }
+    
+    const isValidPassword = await bcrypt.compare(credentials.password, admin.password);
+    
+    if (!isValidPassword) {
+      return null;
+    }
+    
+    return { ...admin, password: '[HIDDEN]' } as Admin;
+  }
+  
+  // Analytics methods
+  async recordPageView(pageView: string): Promise<Analytics> {
+    // Check if page view already exists
+    const existingPageView = this.analytics.find(a => a.pageView === pageView);
+    
+    if (existingPageView) {
+      existingPageView.count += 1;
+      return existingPageView;
+    }
+    
+    const newPageView: Analytics = {
+      id: this.nextAnalyticsId++,
+      pageView,
+      count: 1,
+      createdAt: new Date()
+    };
+    
+    this.analytics.push(newPageView);
+    return newPageView;
+  }
+  
+  async getPageViews(): Promise<Analytics[]> {
+    return this.analytics;
+  }
+  
+  async getTopPageViews(limit: number): Promise<Analytics[]> {
+    return [...this.analytics]
+      .sort((a, b) => b.count - a.count)
+      .slice(0, limit);
+  }
+  
+  // Website Settings methods
+  async getWebsiteSettings(): Promise<WebsiteSettings> {
+    return this.websiteSettings;
+  }
+  
+  async updateWebsiteSettings(data: Partial<InsertWebsiteSettings>): Promise<WebsiteSettings> {
+    this.websiteSettings = {
+      ...this.websiteSettings,
+      ...data,
+      updatedAt: new Date()
+    };
+    
+    return this.websiteSettings;
+  }
+  
+  // Personal Info methods
+  async getPersonalInfo(): Promise<PersonalInfo> {
+    return this.personalInfo;
+  }
+  
+  async updatePersonalInfo(data: Partial<InsertPersonalInfo>): Promise<PersonalInfo> {
+    this.personalInfo = {
+      ...this.personalInfo,
+      ...data,
+      updatedAt: new Date()
+    };
+    
+    return this.personalInfo;
+  }
+  
+  // Social Links methods
+  async getSocialLinks(): Promise<SocialLink[]> {
+    return [...this.socialLinks].sort((a, b) => a.displayOrder - b.displayOrder);
+  }
+  
+  async getSocialLinkById(id: number): Promise<SocialLink | null> {
+    const socialLink = this.socialLinks.find(s => s.id === id);
+    return socialLink || null;
+  }
+  
+  async createSocialLink(data: InsertSocialLink): Promise<SocialLink> {
+    const socialLink: SocialLink = {
+      id: this.nextSocialLinkId++,
+      platform: data.platform,
+      url: data.url,
+      icon: data.icon,
+      displayOrder: data.displayOrder || 0,
+      updatedAt: new Date()
+    };
+    
+    this.socialLinks.push(socialLink);
+    return socialLink;
+  }
+  
+  async updateSocialLink(id: number, data: Partial<InsertSocialLink>): Promise<SocialLink | null> {
+    const index = this.socialLinks.findIndex(s => s.id === id);
+    
+    if (index === -1) {
+      return null;
+    }
+    
+    this.socialLinks[index] = {
+      ...this.socialLinks[index],
+      ...data,
+      updatedAt: new Date()
+    };
+    
+    return this.socialLinks[index];
+  }
+  
+  async deleteSocialLink(id: number): Promise<boolean> {
+    const initialLength = this.socialLinks.length;
+    this.socialLinks = this.socialLinks.filter(s => s.id !== id);
+    
+    return initialLength > this.socialLinks.length;
+  }
+  
+  // Projects methods
+  async getProjects(): Promise<Project[]> {
+    return [...this.projects].sort((a, b) => a.displayOrder - b.displayOrder);
+  }
+  
+  async getProjectById(id: number): Promise<Project | null> {
+    const project = this.projects.find(p => p.id === id);
+    return project || null;
+  }
+  
+  async createProject(data: InsertProject): Promise<Project> {
+    const project: Project = {
+      id: this.nextProjectId++,
+      title: data.title,
+      description: data.description,
+      thumbnailUrl: data.thumbnailUrl || "",
+      projectUrl: data.projectUrl || "",
+      githubUrl: data.githubUrl || "",
+      technologies: data.technologies || "",
+      featured: data.featured || false,
+      displayOrder: data.displayOrder || 0,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    
+    this.projects.push(project);
+    return project;
+  }
+  
+  async updateProject(id: number, data: Partial<InsertProject>): Promise<Project | null> {
+    const index = this.projects.findIndex(p => p.id === id);
+    
+    if (index === -1) {
+      return null;
+    }
+    
+    this.projects[index] = {
+      ...this.projects[index],
+      ...data,
+      updatedAt: new Date()
+    };
+    
+    return this.projects[index];
+  }
+  
+  async deleteProject(id: number): Promise<boolean> {
+    const initialLength = this.projects.length;
+    this.projects = this.projects.filter(p => p.id !== id);
+    
+    return initialLength > this.projects.length;
+  }
+  
+  async getFeaturedProjects(): Promise<Project[]> {
+    return this.projects.filter(p => p.featured);
+  }
+  
+  // Skills methods
+  async getSkills(): Promise<Skill[]> {
+    return [...this.skills].sort((a, b) => a.displayOrder - b.displayOrder);
+  }
+  
+  async getSkillsByCategory(category: string): Promise<Skill[]> {
+    return this.skills
+      .filter(s => s.category === category)
+      .sort((a, b) => a.displayOrder - b.displayOrder);
+  }
+  
+  async getSkillById(id: number): Promise<Skill | null> {
+    const skill = this.skills.find(s => s.id === id);
+    return skill || null;
+  }
+  
+  async createSkill(data: InsertSkill): Promise<Skill> {
+    const skill: Skill = {
+      id: this.nextSkillId++,
+      name: data.name,
+      category: data.category || "frontend",
+      proficiency: data.proficiency || 80,
+      icon: data.icon || "",
+      displayOrder: data.displayOrder || 0,
+      updatedAt: new Date()
+    };
+    
+    this.skills.push(skill);
+    return skill;
+  }
+  
+  async updateSkill(id: number, data: Partial<InsertSkill>): Promise<Skill | null> {
+    const index = this.skills.findIndex(s => s.id === id);
+    
+    if (index === -1) {
+      return null;
+    }
+    
+    this.skills[index] = {
+      ...this.skills[index],
+      ...data,
+      updatedAt: new Date()
+    };
+    
+    return this.skills[index];
+  }
+  
+  async deleteSkill(id: number): Promise<boolean> {
+    const initialLength = this.skills.length;
+    this.skills = this.skills.filter(s => s.id !== id);
+    
+    return initialLength > this.skills.length;
   }
 }
 

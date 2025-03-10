@@ -1,13 +1,14 @@
 import { Switch, Route } from "wouter";
-import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
-import NotFound from "@/pages/not-found";
 import Home from "@/pages/Home";
 import Admin from "@/pages/Admin";
-import { ThemeProvider } from "@/context/ThemeContext";
-import { MusicProvider } from "@/context/MusicContext";
-import { PortfolioProvider } from "@/context/PortfolioContext";
+import NotFound from "@/pages/not-found";
+import { AppProvider } from "./context/AppContext";
+import CustomCursor from "./components/CustomCursor";
+import { useEffect } from "react";
+import i18n from "./lib/i18n";
 
 function Router() {
   return (
@@ -20,16 +21,21 @@ function Router() {
 }
 
 function App() {
+  useEffect(() => {
+    // Initialize i18n
+    const savedLanguage = localStorage.getItem("language") || "en";
+    i18n.changeLanguage(savedLanguage);
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider>
-        <MusicProvider>
-          <PortfolioProvider>
-            <Router />
-            <Toaster />
-          </PortfolioProvider>
-        </MusicProvider>
-      </ThemeProvider>
+      <AppProvider>
+        <div className="font-body scroll-smooth">
+          <CustomCursor />
+          <Router />
+          <Toaster />
+        </div>
+      </AppProvider>
     </QueryClientProvider>
   );
 }

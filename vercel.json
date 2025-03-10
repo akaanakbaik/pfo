@@ -9,11 +9,15 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "server/index.ts"
+      "dest": "/dist/index.js"
+    },
+    {
+      "src": "/(.*\\.js|.*\\.css|.*\\.png|.*\\.jpg|.*\\.svg|.*\\.ico|.*\\.json|.*\\.woff|.*\\.woff2|.*\\.ttf|.*\\.otf)",
+      "dest": "/$1"
     },
     {
       "src": "/(.*)",
-      "dest": "client/index.html"
+      "dest": "/index.html"
     }
   ]
 }

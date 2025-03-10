@@ -1,79 +1,68 @@
-import { useEffect } from "react";
-import { motion } from "framer-motion";
-import { pageTransition } from "@/lib/animations";
-import Header from "@/components/Header";
-import HeroSection from "@/components/HeroSection";
-import AboutSection from "@/components/AboutSection";
-import ProjectsSection from "@/components/ProjectsSection";
-import NetworkSection from "@/components/NetworkSection";
-import ContactSection from "@/components/ContactSection";
-import Footer from "@/components/Footer";
-import MusicPlayer from "@/components/MusicPlayer";
-import ScrollToTop from "@/components/ScrollToTop";
-import Preloader from "@/components/Preloader";
-import { usePortfolio } from "@/context/PortfolioContext";
+import { useEffect } from 'react';
+import { motion } from 'framer-motion';
+import Header from '@/components/Header';
+import DesktopNav from '@/components/DesktopNav';
+import StatsBox from '@/components/StatsBox';
+import HeroSection from '@/sections/HeroSection';
+import AboutSection from '@/sections/AboutSection';
+import ProjectsSection from '@/sections/ProjectsSection';
+import FriendsSection from '@/sections/FriendsSection';
+import ContactSection from '@/sections/ContactSection';
+import Footer from '@/sections/Footer';
+import useVisitorCount from '@/hooks/useVisitorCount';
 
-export default function Home() {
-  const { isLoading } = usePortfolio();
+const Home = () => {
+  const { incrementVisitorCount } = useVisitorCount();
 
-  // Custom cursor effect
   useEffect(() => {
-    const cursor = document.createElement("div");
-    cursor.classList.add("cursor-effect", "bg-primary");
-
-    const handleMouseMove = (e: MouseEvent) => {
-      cursor.style.left = `${e.clientX}px`;
-      cursor.style.top = `${e.clientY}px`;
-    };
-
-    // Only add custom cursor on desktop
-    if (window.innerWidth > 1024) {
-      document.body.appendChild(cursor);
-      document.addEventListener("mousemove", handleMouseMove);
+    // Increment visitor count on first visit
+    if (!sessionStorage.getItem('visited')) {
+      incrementVisitorCount();
+      sessionStorage.setItem('visited', 'true');
     }
 
+    // Initialize scroll animations
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    document.querySelectorAll('.fade-in').forEach(el => {
+      observer.observe(el);
+    });
+
     return () => {
-      if (cursor.parentNode) {
-        document.body.removeChild(cursor);
-      }
-      document.removeEventListener("mousemove", handleMouseMove);
+      observer.disconnect();
     };
-  }, []);
+  }, [incrementVisitorCount]);
 
   return (
-    <>
-      <Preloader />
-      {/* Background music audio element - optimized for performance */}
-      <audio
-        id="backgroundMusic"
-        src="https://file.btch.rf.gd/file/qayd1gnv82otafiu97py.mp3"
-        loop
-        preload="metadata"
-        style={{ display: 'none' }}
-        crossOrigin="anonymous"
-      />
-
-      <motion.div
-        initial="hidden"
-        animate="visible"
-        exit="exit"
-        variants={pageTransition}
-        className="min-h-screen flex flex-col"
-      >
-        <Header />
-        
-        <main className="flex-grow">
-          <HeroSection />
-          <AboutSection />
-          <ProjectsSection />
-          <NetworkSection />
-          <ContactSection />
-        </main>
-        
-        <Footer />
-        <MusicPlayer />
-        <ScrollToTop />
-      </motion.div>
-    </>
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      <Header />
+      <DesktopNav />
+      <StatsBox />
+      
+      <main>
+        <HeroSection />
+        <AboutSection />
+        <ProjectsSection />
+        <FriendsSection />
+        <ContactSection />
+      </main>
+      
+      <Footer />
+    </motion.div>
   );
-}
+};
+
+export default Home;
