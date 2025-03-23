@@ -9,38 +9,32 @@ const FriendsSection = () => {
   const friends = [
     {
       id: 1,
-      name: "Ahmad",
-      role: "Full Stack Developer",
-      description: "A talented developer who taught me a lot about React and modern web development.",
-      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&h=300&q=80",
+      name: "Youso",
+      role: "sesepuh",
+      description: "my good friend, who taught me a lot and is a senior programmer ",
+      image: "https://nauval.mycdn.biz.id/download/1741883430170.jpeg",
       social: {
-        github: "#",
-        linkedin: "#",
-        twitter: "#"
+        tiktok: "https://www.tiktok.com/@youu_soo?_t=ZS-8ugHFmyX78H&_r=1",
       }
     },
     {
       id: 2,
-      name: "Sarah",
-      role: "UI/UX Designer",
-      description: "An amazing designer who helps me understand the importance of user-centered design.",
-      image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&h=300&q=80",
+      name: "Hydra",
+      role: "developer bot WhatsApp",
+      description: "a WhatsApp bot expert and very kind, friendly d",
+      image: "https://nauval.mycdn.biz.id/download/1741970090491.jpeg",
       social: {
-        github: "#",
-        linkedin: "#",
-        behance: "#"
+        tiktok: "https://www.tiktok.com/@genzo_am?_t=ZS-8ugI0eDEwia&_r=1",
       }
     },
     {
       id: 3,
-      name: "Michael",
-      role: "Backend Developer",
-      description: "A brilliant programmer who introduced me to Python and database management.",
-      image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=300&h=300&q=80",
+      name: "Raol",
+      role: "full stack enginer",
+      description: "a peer of mine who has extraordinary skills in programming",
+      image: "https://nauval.mycdn.biz.id/download/1741970484973.jpeg",
       social: {
-        github: "#",
-        stackoverflow: "#",
-        twitter: "#"
+        github: "https://github.com/latesturl",
       }
     }
   ];
@@ -63,6 +57,11 @@ const FriendsSection = () => {
           {friend.social.github && (
             <a href={friend.social.github} className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-primary/20 transition-colors duration-300">
               <i className="fab fa-github text-primary"></i>
+            </a>
+          )}
+          {friend.social.tiktok && (
+            <a href={friend.social.tiktok} className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-primary/20 transition-colors duration-300">
+              <i className="fab fa-tiktok text-primary"></i>
             </a>
           )}
           {friend.social.linkedin && (
@@ -125,3 +124,4 @@ const FriendsSection = () => {
 };
 
 export default FriendsSection;
+        
