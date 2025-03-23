@@ -11,25 +11,25 @@ const ProjectsSection = () => {
       id: 1,
       title: "Personal Portfolio",
       description: "A responsive portfolio website built with modern web technologies.",
-      image: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
-      technologies: ["HTML", "CSS", "JavaScript"],
-      liveUrl: "#",
+      image: "https://nauval.mycdn.biz.id/download/1742031297812.jpeg",
+      technologies: ["HTML", "CSS", "typescript"],
+      liveUrl: "sonkanz.my.id",
       codeUrl: "#"
     },
     {
       id: 2,
-      title: "Task Manager App",
-      description: "A full-stack application for managing tasks and daily activities.",
-      image: "https://images.unsplash.com/photo-1467232004584-a241de8bcf5d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
+      title: "Bot WhatsApp",
+      description: "an advanced wa bot technology ",
+      image: "https://nauval.mycdn.biz.id/download/1742031640154.jpeg",
       technologies: ["React", "Node.js", "MongoDB"],
-      liveUrl: "#",
+      liveUrl: "https://wa.me/628884220184",
       codeUrl: "#"
     },
     {
       id: 3,
-      title: "Weather Dashboard",
-      description: "Real-time weather information app with location services.",
-      image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80",
+      title: "to url/cdn",
+      description: "coming soon",
+      image: "https://nauval.mycdn.biz.id/download/1742031815177.jpeg",
       technologies: ["JavaScript", "API", "CSS"],
       liveUrl: "#",
       codeUrl: "#"
@@ -103,3 +103,4 @@ const ProjectsSection = () => {
 };
 
 export default ProjectsSection;
+        
